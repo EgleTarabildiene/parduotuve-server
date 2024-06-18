@@ -14,6 +14,11 @@ const connect_1 = require("../db/connect");
 class ProductsController {
     static getAll(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (req.user.type > 2) {
+                return res.status(400).json({
+                    text: "Neturite teisiu"
+                });
+            }
             const sql = "SELECT * FROM products";
             const [result] = yield connect_1.pool.query(sql);
             res.json(result);

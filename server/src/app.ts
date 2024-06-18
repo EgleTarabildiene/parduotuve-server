@@ -4,6 +4,8 @@ import bodyParser from 'body-parser';
 import { corsHeaders } from './middlewares/cors.middleware';
 import { productsRouter } from './routes/products.router';
 import { authRouter } from './routes/auth.router';
+import { authMiddleware } from './middlewares/auth.middleware';
+import { userRouter } from './routes/user.router';
 
 const app:Application=express();
 
@@ -13,14 +15,15 @@ app.use(express.urlencoded());
 //Sutvarkomi duomenys jei buvo atsiustas JSON failas
 app.use(express.json());
 
-//I visus respose hederius ikeliame CORS nurodymus 
+//Į visus response header'ius įkeliame CORS nurodymus
 app.use(corsHeaders);
 
+//app.get('/products',authMiddleware);
 
-//Uzkrauname rautu faila(kur nurodyta skaiciuokles url)
+//Užkrauname route failą (kur nurodyti skaičiuoklės url)
 app.use('/skaiciuokle', skaiciuokleRouter);
 app.use('/products', productsRouter);
 app.use('/auth', authRouter);
-
+app.use("/users", userRouter);
 
 export {app};
