@@ -1,4 +1,3 @@
-
 import { RowDataPacket } from "mysql2";
 
 

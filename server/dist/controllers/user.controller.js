@@ -13,8 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
+const path_1 = __importDefault(require("path"));
 const connect_1 = require("../db/connect");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const fs_1 = __importDefault(require("fs"));
 class UserController {
     static getAll(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -44,6 +46,42 @@ class UserController {
             }
         });
     }
+    static updateUserRecord(id, email, name, password, type, fileURL) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (password != '') {
+                const passwordHash = yield bcrypt_1.default.hash(password, 12);
+                yield connect_1.pool.query("UPDATE users SET email=?, name=?, password=? WHERE id=? ", [
+                    email,
+                    name,
+                    passwordHash,
+                    id
+                ]);
+            }
+            else {
+                yield connect_1.pool.query("UPDATE users SET email=?, name=? WHERE id=? ", [
+                    email,
+                    name,
+                    id
+                ]);
+            }
+            if (type != null) {
+                yield connect_1.pool.query("UPDATE users SET type=? WHERE id=? ", [
+                    type,
+                    id
+                ]);
+            }
+            if (fileURL != null) {
+                //Pasiimame buvusią informaciją iš DB
+                const [oldUser] = yield connect_1.pool.query("SELECT * FROM users WHERE id=?", [id]);
+                //Ištriname failą
+                fs_1.default.unlinkSync(path_1.default.join('./img/' + oldUser[0].img.split('/').pop()));
+                yield connect_1.pool.query("UPDATE users SET img=? WHERE id=? ", [
+                    fileURL,
+                    id
+                ]);
+            }
+        });
+    }
     static update(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             //Redaguojamo vartotojo ID
@@ -55,24 +93,7 @@ class UserController {
                     text: "Jūs neturite teisės redaguoti įrašą"
                 });
             }
-            if (req.body.password != '') {
-                const passwordHash = yield bcrypt_1.default.hash(req.body.password, 12);
-                yield connect_1.pool.query("UPDATE users SET email=?, name=?, password=?, type=? WHERE id=? ", [
-                    req.body.email,
-                    req.body.name,
-                    passwordHash,
-                    req.body.type,
-                    userId
-                ]);
-            }
-            else {
-                yield connect_1.pool.query("UPDATE users SET email=?, name=?, type=? WHERE id=? ", [
-                    req.body.email,
-                    req.body.name,
-                    req.body.type,
-                    userId
-                ]);
-            }
+            yield UserController.updateUserRecord(userId, req.body.email, req.body.name, req.body.password, req.body.type, null);
             res.json({
                 success: true
             });
@@ -81,6 +102,18 @@ class UserController {
     static delete(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             yield connect_1.pool.query("DELETE FROM users WHERE id=?", [req.params.id]);
+            res.json({
+                success: true
+            });
+        });
+    }
+    static updateProfile(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const userId = req.params.id;
+            console.log("Vartotojo profilis atnaujintas");
+            console.log(req.body);
+            const url = req.protocol + "://" + req.get("host") + "/img/" + req.file.filename;
+            UserController.updateUserRecord(userId, req.body.email, req.body.name, req.body.password, null, url);
             res.json({
                 success: true
             });

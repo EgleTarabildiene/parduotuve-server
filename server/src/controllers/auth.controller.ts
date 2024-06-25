@@ -63,6 +63,7 @@ export class AuthController{
             //console.log(k);
     
             res.json({
+                'id':user.id,
                 'name':user.name,
                 'email':user.email,
                 'token':token,

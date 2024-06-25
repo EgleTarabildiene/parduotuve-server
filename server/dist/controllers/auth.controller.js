@@ -65,6 +65,7 @@ class AuthController {
                 //const k=jwt.verify("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzE4MjY0Njk3LCJleHAiOjE3MTg0Mzc0OTd9.2CXay21b6mJVcGTRK_MejAjP1f53jmjvx5wpGtqD_UU","kk59444gsd4r9+-eyery64er94ty9wer49erh4");    
                 //console.log(k);
                 res.json({
+                    'id': user.id,
                     'name': user.name,
                     'email': user.email,
                     'token': token,

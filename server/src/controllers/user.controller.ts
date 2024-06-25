@@ -1,6 +1,8 @@
+import path from "path";
 import { pool } from "../db/connect";
 import { User } from "../models/user";
 import bcrypt from "bcrypt";
+import  fs from 'fs';
 
 export class UserController{
     static async getAll(req:any, res:any){
@@ -31,6 +33,45 @@ export class UserController{
         }
     }
 
+    static async updateUserRecord(id:any, email:any, name:any, password:any, type:any, fileURL:any){
+        if (password!=''){
+            const passwordHash=await bcrypt.hash(password, 12);
+
+            await pool.query("UPDATE users SET email=?, name=?, password=? WHERE id=? ",[
+                email,
+                name,
+                passwordHash,
+                id
+            ]);
+        }else{
+            await pool.query("UPDATE users SET email=?, name=? WHERE id=? ",[
+                email,
+                name,
+                id
+            ]);
+        }
+
+        if (type!=null){
+            await pool.query("UPDATE users SET type=? WHERE id=? ",[
+                type,
+                id
+            ]);
+        }
+
+        if (fileURL!=null){
+            //Pasiimame buvusią informaciją iš DB
+            const [oldUser]=await pool.query<User[]>("SELECT * FROM users WHERE id=?", [id]);
+            
+            //Ištriname failą
+            fs.unlinkSync(path.join('./img/'+oldUser[0].img.split('/').pop()));
+            await pool.query("UPDATE users SET img=? WHERE id=? ",[
+                fileURL,
+                id
+            ]);
+        }
+    }
+
+
     static async update(req:any, res:any){
         //Redaguojamo vartotojo ID
         const userId=req.params.id;
@@ -44,32 +85,37 @@ export class UserController{
             })
         }
 
-        if (req.body.password!=''){
-            const passwordHash=await bcrypt.hash(req.body.password, 12);
+       
+        await UserController.updateUserRecord(userId, req.body.email, req.body.name, req.body.password, req.body.type, null );
 
-            await pool.query("UPDATE users SET email=?, name=?, password=?, type=? WHERE id=? ",[
-                req.body.email,
-                req.body.name,
-                passwordHash,
-                req.body.type,
-                userId
-            ]);
-        }else{
-            await pool.query("UPDATE users SET email=?, name=?, type=? WHERE id=? ",[
-                req.body.email,
-                req.body.name,
-                req.body.type,
-                userId
-            ]);
-        }
-        res.json({
+        
+        res.json({  
             success:true
         });
 
     }
 
+
+
     static async delete(req:any, res:any){
         await pool.query("DELETE FROM users WHERE id=?",[req.params.id]);
+        res.json({
+            success:true
+        });
+        
+    }
+
+
+    static async updateProfile(req:any, res:any){
+        const userId=req.params.id;
+
+
+        console.log("Vartotojo profilis atnaujintas")
+        console.log(req.body);
+
+        const url=req.protocol+"://"+req.get("host")+"/img/"+req.file.filename ;
+
+        UserController.updateUserRecord(userId, req.body.email, req.body.name, req.body.password, null, url );
         res.json({
             success:true
         });
